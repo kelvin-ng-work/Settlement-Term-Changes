@@ -22,10 +22,10 @@ public class LoginScreen {
 	   private JPasswordField passwordText;
 	   // JDBC driver name and database URL
 	   static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-	   static final String DB_URL = "jdbc:mysql://localhost/SECURITY";
+	   static final String DB_URL = "jdbc:mysql://localhost/TABLENAME";
 	   // Database user credential
-	   static final String USER = "root";
-	   static final String PASS = "root";
+	   static final String USER = "USERNAME";
+	   static final String PASS = "PASSWORD";
 	   private Connection conn = null;
 	   private Statement stmt = null;
 
@@ -60,11 +60,11 @@ public class LoginScreen {
 				    System.exit(0);
 				 }
 	        });
-		    //Sets up the control panel
+	        //Sets up the control panel
 	        JPanel contentPane = new JPanel();
-			contentPane.setOpaque(true);
-			contentPane.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-			contentPane.setLayout(new BorderLayout(5, 5));		  
+		contentPane.setOpaque(true);
+		contentPane.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		contentPane.setLayout(new BorderLayout(5, 5));		  
 	        controlPanel = new JPanel(); 
 	        controlPanel.setOpaque(true);
 	        controlPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -84,7 +84,7 @@ public class LoginScreen {
 
 	   // Sets up Login window UI components
 	   private void showLogin(){
-		  JPanel credentialPanel = new JPanel();
+	      JPanel credentialPanel = new JPanel();
 	      GridLayout credentialLayout = new GridLayout(4,2);
 	      credentialLayout.setVgap(10);
 	      credentialLayout.setHgap(10);
@@ -102,17 +102,17 @@ public class LoginScreen {
 	      }); 
 	      JButton viewSecuritiesButton = new JButton("View Records");
 	      viewSecuritiesButton.addActionListener(new ActionListener() {
-	    	  public void actionPerformed(ActionEvent e) {     
-	    		    JFrame frame = new JFrame("Settlement Date Table");
-					frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-					LocalDBControl newContentPane = new LocalDBControl();
-					newContentPane.setOpaque(true);
-					frame.setContentPane(newContentPane);
-					frame.setPreferredSize(new Dimension(700,700));
-					//Display the window.
-					frame.pack();
-					frame.setVisible(true);
-		         }
+    	      public void actionPerformed(ActionEvent e) {     
+    	         JFrame frame = new JFrame("Settlement Date Table");
+				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				LocalDBControl newContentPane = new LocalDBControl();
+				newContentPane.setOpaque(true);
+				frame.setContentPane(newContentPane);
+				frame.setPreferredSize(new Dimension(700,700));
+				//Display the window.
+				frame.pack();
+				frame.setVisible(true);
+	         }
 	      });
 	      credentialPanel.add(namelabel);
 	      credentialPanel.add(userText);
@@ -123,8 +123,8 @@ public class LoginScreen {
 	      credentialPanel.add(new JPanel());
 	      credentialPanel.add(viewSecuritiesButton);
 	      int credentialPanelWidth = 400;
-		  int credentialPanelHeight = 200;
-		  credentialPanel.setPreferredSize(new Dimension(credentialPanelWidth, credentialPanelHeight));
+	      int credentialPanelHeight = 200;
+	      credentialPanel.setPreferredSize(new Dimension(credentialPanelWidth, credentialPanelHeight));
 	      controlPanel.add(credentialPanel);
 	      mainFrame.pack();
 	      mainFrame.setVisible(true);
@@ -135,7 +135,7 @@ public class LoginScreen {
 		   String userName;
 		   String password;
 		   try{
-			  // Registers the JDBC driver
+		       // Registers the JDBC driver
 		      Class.forName("com.mysql.jdbc.Driver");
 		      // Opens connection
 		      conn = DriverManager.getConnection(DB_URL,USER,PASS);
@@ -146,14 +146,14 @@ public class LoginScreen {
 		      // Executes the database query
 		      ResultSet rs = stmt.executeQuery(sql);
 		      // Handles returned query result
-			  if(rs.next()) {
-					  // Retrieves by column name
-					  userName  = rs.getString("Username");
-					  password = rs.getString("Password");
-				} else {
-					System.out.println("User does not exist.");
-					return;
-				}
+		        if(rs.next()) {
+				  // Retrieves by column name
+				  userName  = rs.getString("Username");
+				  password = rs.getString("Password");
+			} else {
+				System.out.println("User does not exist.");
+				return;
+			}
 		      // Cleans up JDBC connection
 		      rs.close();
 		      stmt.close();
@@ -172,12 +172,12 @@ public class LoginScreen {
 		      // Handles other errors
 		      e.printStackTrace();
 		   }finally{
-		      // Cleans up database recourses
-			  try {
-	             stmt.close();
-	             conn.close();
+	      	     // Cleans up database recourses
+		     try {
+		             stmt.close();
+		             conn.close();
 		      }catch(SQLException se){
-		         se.printStackTrace();
+	         	     se.printStackTrace();
 		      }
 		   }
 	   }
