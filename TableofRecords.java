@@ -23,10 +23,10 @@ import java.util.*;
 public class TableofRecords extends JPanel {
 	// JDBC driver name and database URL
 	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-	static final String DB_URL = "jdbc:mysql://10.60.67.93:3306/Omega";
+	static final String DB_URL = "jdbc:mysql://HOST/DATABASE";
 	// Database credentials
-	static final String USER = "omega_user";
-	static final String PASS = "omega_user";
+	static final String USER = "USERNAME";
+	static final String PASS = "PASSPHRASE";
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs;
@@ -117,7 +117,7 @@ public class TableofRecords extends JPanel {
         comboBox.addItem("3");
         settlementTermColumn.setCellEditor(new DefaultCellEditor(comboBox));
         DefaultTableCellRenderer renderer =
-                new DefaultTableCellRenderer();
+        new DefaultTableCellRenderer();
         renderer.setToolTipText("Click for drop-down options");
         settlementTermColumn.setCellRenderer(renderer);
     }
