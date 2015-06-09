@@ -2,7 +2,7 @@ Function Global:Send-Email {
 [cmdletbinding()]
 Param (
 [Parameter(Mandatory=$False,Position=0)]
-[String]$Address = "kelvin.ng@omegaats.com",
+[String]$Address = "USER@DOMAIN",
 [Parameter(Mandatory=$False,Position=1)]
 [String]$Subject = "Test Email",
 [Parameter(Mandatory=$False,Position=2)]
