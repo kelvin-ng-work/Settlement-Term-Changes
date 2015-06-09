@@ -14,9 +14,9 @@ import javax.mail.internet.MimeMessage;
 
 // Sends email using Outlook account
 public class EmailDemo {
-	// Account credential
-	private final String username = "kelvin.ng@omegaats.com";
-    private final String password = "Win10&dev";
+    // Account credential
+    private final String username = "user@domain";
+    private final String password = "passphrase";
     // String array that holds the updated security symbols
     private String[] securitySymbolsArray;
     // Date and time to send the notification email
@@ -37,12 +37,12 @@ public class EmailDemo {
         props.put("mail.smtp.host", "outlook.office365.com");
         props.put("mail.smtp.port", "587");
         // Email session
-		Session session = Session.getInstance(props,
-		  new javax.mail.Authenticator() {
-		    protected PasswordAuthentication getPasswordAuthentication() {
-		        return new PasswordAuthentication(username, password);
-		    }
-		});
+	Session session = Session.getInstance(props,
+	  new javax.mail.Authenticator() {
+	    protected PasswordAuthentication getPasswordAuthentication() {
+	        return new PasswordAuthentication(username, password);
+	    }
+	});
         try {
         	// Email message body
         	String messageBody = "Good morning/afternoon,<br><br>";
@@ -66,20 +66,20 @@ public class EmailDemo {
         	messageBody += "<br><br>Best Regards,<br>";
         	messageBody += "OmegaATS";
         	// Configures email settings
-            Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress("kelvin.ng@omegaats.com"));
-            message.setRecipients(Message.RecipientType.TO,
-            InternetAddress.parse("kelvin.ng@omegaats.com"));
-            message.setSubject("Settlement Change Notice");
-            message.setContent(messageBody, "text/html");
-            message.setSentDate(sentDate);
-            Transport.send(message);
-            System.out.println("Done");
+                Message message = new MimeMessage(session);
+                message.setFrom(new InternetAddress("user@domain"));
+                message.setRecipients(Message.RecipientType.TO,
+                InternetAddress.parse("user@domain"));
+                message.setSubject("Settlement Change Notice");
+                message.setContent(messageBody, "text/html");
+                message.setSentDate(sentDate);
+                Transport.send(message);
+                System.out.println("Done");
         } catch (MessagingException e) {
-            throw new RuntimeException(e);
+                throw new RuntimeException(e);
         }
     }
-    // Main function to run this program alone
+        // Main function to run this program alone
 	public static void main(String[]args) throws IOException {
 			EmailDemo emailLauncher = new EmailDemo(new Date(), new String[]{"AAA", "BBB", "CCC"});
 			emailLauncher.sendEmail();
