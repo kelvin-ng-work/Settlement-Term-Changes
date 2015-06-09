@@ -1,11 +1,11 @@
 # Database connection properties
 $server= "localhost"
-$username= "root"
-$password= "root"
-$database= "SECURITY"
+$username= "USER"
+$password= "PASSWORD"
+$database= "DATABASE"
 $Query= ""
 # The path to MySQL Connector
-[void][system.reflection.Assembly]::LoadFrom("C:\Program Files (x86)\MySQL\Connector.NET 6.9\Assemblies\v4.5\MySQL.Data.dll")
+[void][system.reflection.Assembly]::LoadFrom("FOLDERPATH\MySQL.Data.dll")
 
 # Sets up connection string
 function global:Set-SqlConnection ( $server = $(Read-Host "SQL Server Name"), $username = $(Read-Host "Username"), $password = $(Read-Host "Password"), $database = $(Read-Host "Default Database") ) {
