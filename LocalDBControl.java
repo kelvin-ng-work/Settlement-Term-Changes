@@ -21,12 +21,12 @@ import java.util.*;
 
 // Database operations
 public class LocalDBControl extends JPanel {
-	// JDBC driver name and database URL
-	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-	static final String DB_URL = "jdbc:mysql://localhost/SECURITY";
-	// Database user credential
-    static final String USER = "root";
-    static final String PASS = "root";
+    // JDBC driver name and database URL
+    static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
+    static final String DB_URL = "jdbc:mysql://localhost/DATABASE";
+    // Database user credential
+    static final String USER = "USERNAME";
+    static final String PASS = "PASSWORD";
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs;
@@ -241,7 +241,7 @@ public class LocalDBControl extends JPanel {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         LocalDBControl newContentPane = new LocalDBControl();
         int contentPaneWidth = 700;
-  	    int contentPaneHeight = 700;
+  	int contentPaneHeight = 700;
         newContentPane.setPreferredSize(new Dimension(contentPaneWidth, contentPaneHeight));
         newContentPane.setOpaque(true);
         frame.setContentPane(newContentPane);
@@ -290,15 +290,15 @@ public class LocalDBControl extends JPanel {
     			sql += searchTerm;
     		}
     		rs = stmt.executeQuery(sql);
-    	  // Handles returned query result
-		  if(!rs.first()) {
+		// Handles returned query result
+		if(!rs.first()) {
 			securitiesArray[0] = "N/A";
-		  } else {
-			  while(rs.next() && pos < 100){
-				 String securitySymbol = rs.getString("symbol");
-				 securitiesArray[pos++] = securitySymbol;        
-			  }
-		  }
+		} else {
+			while(rs.next() && pos < 100){
+				String securitySymbol = rs.getString("symbol");
+				securitiesArray[pos++] = securitySymbol;        
+			}
+		}
     	}catch(SQLException se){
           //Handle errors for JDBC
           se.printStackTrace();
@@ -316,8 +316,5 @@ public class LocalDBControl extends JPanel {
                 createAndShowGUI();
             }
         });
-        
-        
-        
     }
 }
