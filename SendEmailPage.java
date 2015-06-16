@@ -1,10 +1,9 @@
-package security.settlement;
-
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -40,6 +39,7 @@ public class SendEmailPage extends JFrame {
 	private JSpinner timeSpinner;
 	private DateFormat dateFormat;
 	private Calendar c;
+	private int daysUntilSettlement;
 	private Date settlementDate;
 	private Date emailNotificationDate;
 	private Font font;
@@ -48,8 +48,9 @@ public class SendEmailPage extends JFrame {
     public SendEmailPage(int settlementTerm, String[] securitySymbols) {
     	securitySymbolsArray = new String[100];
     	securitySymbolsArray = securitySymbols;
+    	daysUntilSettlement = settlementTerm;
     	dateFormat= new SimpleDateFormat("MM/dd/yyyy");
-    	c = Calendar.getInstance();    
+    	c = Calendar.getInstance();
     	c.setTime(new Date());
     	c.add(Calendar.DATE, settlementTerm);
         initUI();
@@ -69,7 +70,7 @@ public class SendEmailPage extends JFrame {
 	    } catch (UnsupportedLookAndFeelException e) {
 	        e.printStackTrace();
 	    }
-    	font = new Font("Palatino", Font.PLAIN, 14);
+    	font = new Font("Palatino", Font.PLAIN, 16);
     	controlPanel = new JPanel();
     	GridLayout layout = new GridLayout(4,2);
     	layout.setVgap(10);
@@ -88,9 +89,9 @@ public class SendEmailPage extends JFrame {
         controlPanel.add(deliveryDateTime);
         timeSpinner = new JSpinner(new SpinnerDateModel());
         JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(timeSpinner, "MM/dd/yyyy hh:mm");
-        timeEditor.setFont(font);
         timeSpinner.setEditor(timeEditor);
         timeSpinner.setValue(new Date());
+        timeSpinner.setFont(font);
         controlPanel.add(timeSpinner);
         controlPanel.add(new JPanel());
         JButton sendEmailButton = new JButton("OK");
@@ -103,15 +104,19 @@ public class SendEmailPage extends JFrame {
         controlPanel.add(statusLabel);
         add(controlPanel);
         pack();
-        setTitle("Set Date/Time for Notification Email");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);     
+        setTitle("Email Date/Time");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        //setLocationRelativeTo(null);
+        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+        int x = (int) ((dimension.getWidth() - getWidth()) / 2);
+        int y = (int) ((dimension.getHeight() - getHeight()) / 2);
+        setLocation(x, y);
     }
     
     // Button handler to send email
     class sendEmailActionListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
-        	EmailDemo launchEmail = new EmailDemo((Date)timeSpinner.getValue(), securitySymbolsArray);
+        	EmailDemo launchEmail = new EmailDemo(daysUntilSettlement, c.getTime(), securitySymbolsArray);
         	launchEmail.sendEmail();
         	statusLabel.setText("Email sent.");
         	System.out.println((Date)timeSpinner.getValue());

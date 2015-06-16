@@ -1,7 +1,8 @@
-package security.settlement;
-
 import java.awt.*;
 import java.awt.event.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.text.DateFormat;
@@ -25,6 +26,8 @@ public class SearchandUpdatePage {
    private JCheckBox updateStatus;
    private JTextField securityID;
    private JTextField symbol;
+   private JSpinner timeSpinner;
+   private JSpinner refTimeSpinner;
    private JTextField dateOfChange;
    private Font font;
    private String[] securitySymbolsArray;
@@ -38,6 +41,7 @@ public class SearchandUpdatePage {
 			}
       }
    }
+   
    // Configures search by wildcard security symbol option
    class securitySymbolSearchActionListener implements ActionListener {
       public void actionPerformed(ActionEvent e) {
@@ -47,21 +51,23 @@ public class SearchandUpdatePage {
 			}
       }
    }
+   
    // Searches and displays securities table
    class searchActionListener implements ActionListener {
 	   public void actionPerformed(ActionEvent e) {
 				frame = new JFrame("Security Table");
-				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 				if(!(securityID.getText().length() == 0)) {
 					newContentPane = new LocalDBControl(Integer.parseInt(securityID.getText()));
 				} else if (!(symbol.getText().length() == 0)) {
 					newContentPane = new LocalDBControl(symbol.getText());
 				} else {
+					//JOptionPane.showMessageDialog(new JFrame(), "Input either a security Id or symbol.", "Input Error", JOptionPane.ERROR_MESSAGE);
 					newContentPane = new LocalDBControl();
-				}		
+				}
 				newContentPane.setOpaque(true);
 				frame.setContentPane(newContentPane);
-				frame.setPreferredSize(new Dimension(700,700));
+				frame.setPreferredSize(new Dimension(900,900));
 				frame.pack();
 				frame.setVisible(true);
 	   }
@@ -70,19 +76,21 @@ public class SearchandUpdatePage {
    // Updates settlement dates of securities
    class updateActionListener implements ActionListener {
 	   public void actionPerformed(ActionEvent e) {
+		    long days = (((Date)timeSpinner.getValue()).getTime() - ((Date)refTimeSpinner.getValue()).getTime()) / (24 * 60 * 60 * 1000);
+		    int daysUntilSettlement = (int)days + 1;
 		    securitySymbolsArray = new String[100];
-		    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
 		    Date date = new Date();
 		    dateOfChange.setText(dateFormat.format(date));
 		    if(!updateStatus.isSelected()) {
 			    updateStatus.setSelected(true);
 		    }
 			if(!(securityID.getText().length() == 0)) {
-				newContentPane.changeSettlementDate((int)settlementTermSelection.getSelectedItem(), Integer.parseInt(securityID.getText()), "");
+				newContentPane.updateSettlementDate(daysUntilSettlement);
 				newContentPane = new LocalDBControl(Integer.parseInt(securityID.getText()));
 				securitySymbolsArray = newContentPane.getSecurities(Integer.parseInt(securityID.getText()), "");
 			} else if (!(symbol.getText().length() == 0)) {
-				newContentPane.changeSettlementDate((int)settlementTermSelection.getSelectedItem(), 0, symbol.getText());
+				newContentPane.updateSettlementDate(daysUntilSettlement);
 				newContentPane = new LocalDBControl(symbol.getText());
 				securitySymbolsArray = newContentPane.getSecurities(0, symbol.getText());
 			} else {
@@ -93,7 +101,7 @@ public class SearchandUpdatePage {
 			frame.setContentPane(newContentPane);
 			frame.pack();
 			frame.setVisible(true);
-		    SendEmailPage emailWindow = new SendEmailPage(3, securitySymbolsArray);
+		    SendEmailPage emailWindow = new SendEmailPage(daysUntilSettlement, securitySymbolsArray);
 		    emailWindow.setVisible(true);
 	   }
    }
@@ -119,7 +127,7 @@ public class SearchandUpdatePage {
 	    } catch (UnsupportedLookAndFeelException e) {
 	        e.printStackTrace();
 	    }
-	    font = new Font("Palatino", Font.PLAIN, 14);
+	    font = new Font("Palatino", Font.PLAIN, 16);
 	    int frameWidth = 700;
 	    int frameHeight = 700;
         mainFrame = new JFrame("Update Settlement Terms");
@@ -133,8 +141,8 @@ public class SearchandUpdatePage {
 	  contentPane = new JPanel();
 	  contentPane.setOpaque(true);
 	  contentPane.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-	  int contentPaneWidth = 650;
-	  int contentPaneHeight = 650;
+	  int contentPaneWidth = 600;
+	  int contentPaneHeight = 600;
 	  contentPane.setPreferredSize(new Dimension(contentPaneWidth, contentPaneHeight));
 	  controlPanel = new JPanel();
 	  controlPanel.setOpaque(true);
@@ -152,9 +160,9 @@ public class SearchandUpdatePage {
 	  // Search Options
 	  JPanel buttonsPanel = new JPanel();
 	  buttonsPanel.setLayout(new GridLayout(1, 2));
-	  firstOption = new JRadioButton("Security ID");
+	  firstOption = new JRadioButton("ID");
 	  firstOption.setFont(font);
-	  secondOption = new JRadioButton("(Wildcard) Symbol");
+	  secondOption = new JRadioButton("Symbol");
 	  secondOption.setFont(font);
 	  ButtonGroup searchOptionGroup = new ButtonGroup();
 	  searchOptionGroup.add(firstOption);
@@ -170,12 +178,14 @@ public class SearchandUpdatePage {
 	  securityIdLabel.setFont(font);
 	  securityID = new JTextField();
 	  securityID.setFont(font);
-	  JLabel symbolLabel = new JLabel("Symbol", JLabel.LEFT);
+	  JLabel symbolLabel = new JLabel("Security Symbol", JLabel.LEFT);
 	  symbolLabel.setFont(font);
 	  symbol = new JTextField();
 	  symbol.setFont(font);
 	  searchButton = new JButton("Search");
 	  searchButton.setFont(font);
+	  securityID.setEnabled(true);
+	  symbol.setEnabled(false);
 	  controlPanel.add(securityIdLabel);
 	  controlPanel.add(securityID);
 	  controlPanel.add(symbolLabel);
@@ -183,8 +193,9 @@ public class SearchandUpdatePage {
 	  controlPanel.add(new JPanel());
 	  controlPanel.add(searchButton);
 	  // Data Fields
-	  JLabel newSettlementTermLabel = new JLabel("New Settlement Term", JLabel.LEFT);
+	  JLabel newSettlementTermLabel = new JLabel("New Settlement Date", JLabel.LEFT);
       newSettlementTermLabel.setFont(font);
+      /*
       settlementTermSelection = new JComboBox<Integer>();
       settlementTermSelection.addItem(1);
       settlementTermSelection.addItem(2);
@@ -194,10 +205,19 @@ public class SearchandUpdatePage {
       settlementTermSelection.addItem(6);
       settlementTermSelection.addItem(7);
       settlementTermSelection.setFont(font);
+      */
+      timeSpinner = new JSpinner(new SpinnerDateModel());
+      refTimeSpinner = new JSpinner(new SpinnerDateModel());
+      JSpinner.DateEditor refTimeEditor = new JSpinner.DateEditor(refTimeSpinner, "MM/dd/yyyy");
+      refTimeSpinner.setValue(new Date());
+      JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(timeSpinner, "MM/dd/yyyy");
+      timeSpinner.setEditor(timeEditor);
+      timeSpinner.setValue(new Date());
+      timeSpinner.setFont(font);
       updateButton = new JButton("Update");
       updateButton.setFont(font);
       controlPanel.add(newSettlementTermLabel);
-      controlPanel.add(settlementTermSelection);
+      controlPanel.add(timeSpinner);
       controlPanel.add(new JPanel());
       controlPanel.add(updateButton);
       // Status Confirmation     
@@ -206,6 +226,7 @@ public class SearchandUpdatePage {
       dateOfChange = new JTextField();
       dateOfChange.setEditable(false);
       updateStatus = new JCheckBox("Completed");
+      updateStatus.setFont(font);
       updateStatus.setEnabled(false);
       controlPanel.add(dateOfChangeLabel);
       controlPanel.add(dateOfChange);
@@ -213,7 +234,11 @@ public class SearchandUpdatePage {
       controlPanel.add(updateStatus);
       mainFrame.add(contentPane);
       mainFrame.pack();
-      mainFrame.setLocationRelativeTo(null);
+      Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+      int x = (int) ((dimension.getWidth() - mainFrame.getWidth()) / 2);
+      int y = (int) ((dimension.getHeight() - mainFrame.getHeight()) / 2);
+      mainFrame.setLocation(x, y);
+      //mainFrame.setLocationRelativeTo(null);
       mainFrame.setVisible(true);
       firstOption.addActionListener(new securityIdSearchActionListener());
       secondOption.addActionListener(new securitySymbolSearchActionListener());

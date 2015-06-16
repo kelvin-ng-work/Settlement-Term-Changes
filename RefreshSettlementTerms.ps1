@@ -1,14 +1,14 @@
 # Database connection properties
-$server= "localhost"
-$username= "USER"
-$password= "PASSWORD"
-$database= "DATABASE"
+$server= "host"
+$username= "user"
+$password= "password"
+$database= "database"
 $Query= ""
 # The path to MySQL Connector
-[void][system.reflection.Assembly]::LoadFrom("FOLDERPATH\MySQL.Data.dll")
+[void][system.reflection.Assembly]::LoadFrom("C:\...\MySQL.Data.dll")
 
 # Sets up connection string
-function global:Set-SqlConnection ( $server = $(Read-Host "SQL Server Name"), $username = $(Read-Host "Username"), $password = $(Read-Host "Password"), $database = $(Read-Host "Default Database") ) {
+function global:Set-SqlConnection ( $server, $username, $password, $database ) {
 	$SqlConnection.ConnectionString = "server=$server;user id=$username;password=$password;database=$database;pooling=false;Allow Zero Datetime=True;"
 }
 
@@ -27,5 +27,5 @@ function global:Get-SqlDataTable( $Query ) {
 # Connects to database and executes sql statement
 Set-Variable SqlConnection (New-Object MySql.Data.MySqlClient.MySqlConnection) -Scope Global -Option AllScope -Description "Personal variable for Sql Query functions"
 Set-SqlConnection $server $username $password $database
-$Query = "UPDATE SECURITY_TABLE SET MARKED='N', SETTLEMENT_TERM=3 WHERE SETTLEMENT_TERM=0"
+$Query = "UPDATE SECURITY SET MARKED='N', SETTLEMENT_TERM=3"
 $mysqlresults = Get-SqlDataTable $Query

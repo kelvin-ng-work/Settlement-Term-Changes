@@ -18,36 +18,24 @@ import java.sql.*;
 import java.util.*;
 
 // Database operations
-public class TableofRecords extends JPanel {
+public class LocalDBView extends JPanel {
 	// JDBC driver name and database URL
-	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
+	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
 	static final String DB_URL = "jdbc:mysql://host/database";
-	// Database credentials
-	static final String USER = "user";
-	static final String PASS = "password";
+	// Database user credential
+    static final String USER = "user";
+    static final String PASS = "password";
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs;
     private boolean DEBUG = false;
     private int securityId = 0;
-    private String securitySymbol = "";    
+    private String securitySymbol = "";
     Object[][] listOfSecurities;
     int totalSecurities = 0;
     
-    public TableofRecords() {
-        this(0, "");
-    }
-
-    public TableofRecords(int Id) {
-        this(Id, "");
-    }
-    
-    public TableofRecords(String symbol) {
-    	this(0, symbol);
-    }
-    
-    public TableofRecords(int Id, String symbol) {
-		super(new GridLayout(1,0));
+    public LocalDBView() {
+    	super(new GridLayout(1,0));
 		// Sets the UI theme
 		try {
 	        UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
@@ -60,22 +48,20 @@ public class TableofRecords extends JPanel {
 	    } catch (UnsupportedLookAndFeelException e) {
 	        e.printStackTrace();
 	    }
-        securityId = Id;
-        securitySymbol = symbol;
         // Creates the security records table
-        JTable table = new JTable(new MyTableModel(securityId, securitySymbol));
+        JTable table = new JTable(new MyTableModel());
         table.setAutoCreateRowSorter(true);
         table.setPreferredScrollableViewportSize(new Dimension(500, 70));
         // Creates the scroll pane
         JScrollPane scrollPane = new JScrollPane(table);
         // Sets up column sizes
         initColumnSizes(table);
-        // Sets up settlement term column's cell editors
+        // Sets up column's cell editors
         //setUpSettlementTermColumn(table, table.getColumnModel().getColumn(4));
         // Adds the scroll pane to this panel.
         add(scrollPane);
     }
-
+    
     // Sets up column sizes
     private void initColumnSizes(JTable table) {
     	// Creates table model
@@ -88,7 +74,7 @@ public class TableofRecords extends JPanel {
         // Retrieves table handler
         TableCellRenderer headerRenderer = table.getTableHeader().getDefaultRenderer();
         // Configures column properties
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 4; i++) {
             column = table.getColumnModel().getColumn(i);
             comp = headerRenderer.getTableCellRendererComponent(
                                  null, column.getHeaderValue(),
@@ -108,33 +94,15 @@ public class TableofRecords extends JPanel {
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
-
-    // Configures drop-down box for Settlement Term column
-    public void setUpSettlementTermColumn(JTable table, TableColumn settlementTermColumn) {
-        JComboBox<Integer> comboBox = new JComboBox<Integer>();
-        comboBox.addItem(new Integer(0));
-        comboBox.addItem(new Integer(1));
-        comboBox.addItem(new Integer(2));
-        comboBox.addItem(new Integer(3));
-        settlementTermColumn.setCellEditor(new DefaultCellEditor(comboBox));
-        DefaultTableCellRenderer renderer =
-                new DefaultTableCellRenderer();
-        renderer.setToolTipText("Click for drop-down options");
-        settlementTermColumn.setCellRenderer(renderer);
-    }
-
+    
     // Table model class
     class MyTableModel extends AbstractTableModel {
-	   int securityId;
-	   String securitySymbol;
 	   int rowPos = 0;
 	   int colPos = 0;
-       public MyTableModel(int securityId, String securitySymbol) {
-    	   securityId = securityId;
-    	   securitySymbol = securitySymbol;
+       public MyTableModel() {
     	   try{
     		  // 2D string array that holds security records
- 			  //listOfSecurities = new Object[100][100];
+ 			  listOfSecurities = new Object[100][100];
  	          // Registers the JDBC driver
  	          Class.forName("com.mysql.jdbc.Driver");
  	          // Opens connection
@@ -142,52 +110,37 @@ public class TableofRecords extends JPanel {
  	          // Creates SQL statement
  	          stmt = conn.createStatement();
  	          // SQL select statement to retrieve target securities
- 	          String sql = "SELECT SECURITY_ID, SYMBOL, SECURITY_DESC, SETTLEMENT_TERM FROM SECURITY WHERE PERMANENTLY_DELISTED='N'";
- 	          // Adds selection criteria
- 	          if(securityId != 0 && securitySymbol != "") {
- 	        	  String searchCriteria = " AND SECURITY_ID=" + securityId + " AND SYMBOL LIKE '" + securitySymbol + "'";
- 	        	  sql += searchCriteria;
- 	          } else if (securityId != 0) {
- 	        	  String securityIdSearchCriterion = " AND SECURITY_ID=" + securityId;
- 	        	  sql += securityIdSearchCriterion;
- 	          } else if (securitySymbol != "") {
- 	        	  String securitySymbolSearchCriterion = " AND (SYMBOL LIKE '" + securitySymbol + "' OR SYMBOL='" + securitySymbol +"')";
-	        	  sql += securitySymbolSearchCriterion;
- 	          }
+ 	          String sql = "SELECT SECURITY_ID, SYMBOL, SECURITY_DESC, SETTLEMENT_TERM FROM SECURITY WHERE PERMANENTLY_DELISTED='N' AND MARKED='y'";
  	          // Executes the database query
  			  rs = stmt.executeQuery(sql);
  			  // Handles returned query result
  			  if(!rs.first()) {
- 				  listOfSecurities = new Object[1][10];
  				  System.out.println("No record found.");
- 				  listOfSecurities[0][0] = Boolean.FALSE;
- 				  listOfSecurities[0][1] = new Integer(0);
+ 				  listOfSecurities[0][0] = new Integer(0);
+ 				  listOfSecurities[0][1] = "N/A";
  				  listOfSecurities[0][2] = "N/A";
- 				  listOfSecurities[0][3] = "N/A";
- 				  listOfSecurities[0][4] = new Integer(0);
+ 				  listOfSecurities[0][3] = new Integer(0);
  			  } else {
  				  // Extracts data from result set
- 				  rs.last();
- 				  totalSecurities = rs.getRow();
- 				  listOfSecurities = new Object[totalSecurities][5];
- 				  System.out.println(totalSecurities);
- 				  rs.first();
- 	 	          do {
- 	 	             // Retrieves column data
- 	 	        	 Integer security_id  = new Integer(rs.getInt("security_id"));
- 	 	             String symbol = rs.getString("symbol");
- 	 	             String security_desc = rs.getString("security_desc");
- 	 	             Integer settlement_term = new Integer(rs.getInt("settlement_term"));
- 	 	             // Adds the security record to the 2D storing array
- 	 	             listOfSecurities[rowPos][colPos++] = Boolean.FALSE;
- 	 	             listOfSecurities[rowPos][colPos++] = security_id;
- 	 	             listOfSecurities[rowPos][colPos++] = symbol;
- 	 	             listOfSecurities[rowPos][colPos++] = security_desc;
- 	 	             listOfSecurities[rowPos][colPos++] = settlement_term;
- 	 	             // Iterates to next row
- 	 	             rowPos += 1;
- 	 	             colPos = 0;
- 	 	           } while(rs.next() && rowPos <= totalSecurities);
+ 				 rs.last();
+				  totalSecurities = rs.getRow();
+				  listOfSecurities = new Object[totalSecurities][4];
+				  rs.first();
+	 	          do {
+	 	             // Retrieves column data
+	 	        	 Integer security_id  = new Integer(rs.getInt("security_id"));
+	 	             String symbol = rs.getString("symbol");
+	 	             String security_desc = rs.getString("security_desc");
+	 	             Integer settlement_term = new Integer(rs.getInt("settlement_term"));
+	 	             // Adds the security record to the 2D storing array
+	 	             listOfSecurities[rowPos][colPos++] = security_id;
+	 	             listOfSecurities[rowPos][colPos++] = symbol;
+	 	             listOfSecurities[rowPos][colPos++] = security_desc;
+	 	             listOfSecurities[rowPos][colPos++] = settlement_term;
+	 	             // Iterates to next row
+	 	             rowPos += 1;
+	 	             colPos = 0;
+	 	           } while(rs.next() && rowPos <= totalSecurities);
  			  }
  	       }catch(SQLException se){
  	          // Handles JDBC errors
@@ -197,27 +150,14 @@ public class TableofRecords extends JPanel {
  	          e.printStackTrace();
  	       }
        }
-       
-       public MyTableModel(int securityId) {
-    	   this(securityId, "");
-       }
-       
-       public MyTableModel(String securitySymbol) {
-    	   this(0, securitySymbol);
-       }
-       
-       public MyTableModel() {
-    	   this(0, "");
-       }
        	
-        private String[] columnNames = {"Update",
-        								"Security_ID",
+        private String[] columnNames = {"Security_ID",
                                         "Symbol",
                                         "Security_Desc",
                                         "Settlement_Term"
                                         };
-        public final Object[] longValues = {Boolean.FALSE, new Integer(20), "SECURITY_SYMBOL",
-                                            "SECURITY_DESC", new Integer(20)};
+        public final Object[] longValues = { new Integer(20), "SECURITY_SYMBOL",
+                                            "SECURITY_DESC", new Integer(20) };
 
         // Gets the number of columns
         public int getColumnCount() {
@@ -226,7 +166,7 @@ public class TableofRecords extends JPanel {
 
         // Gets the number of rows
         public int getRowCount() {
-            return totalSecurities;
+        	return totalSecurities;
         }
 
     	// Gets the column name
@@ -236,33 +176,21 @@ public class TableofRecords extends JPanel {
 
     	// Gets a specific security record's data value
         public Object getValueAt(int row, int col) {
-        		return listOfSecurities[row][col];
+    		return listOfSecurities[row][col];
         }
 
         // Gets the class of a particular column
         public Class getColumnClass(int c) {
             return getValueAt(0, c).getClass();
         }
-        
-        // Sets the value of a data field
-        public void setValueAt(Object value, int row, int col) {
-        	listOfSecurities[row][col] = value;
-        	fireTableDataChanged();
-        }
-        
-        // Makes table cells editable
-        public boolean isCellEditable(int rowIndex, int columnIndex)
-        {
-            return true;
-        }
     }
 
     // Creates and displays the UI
     private static void createAndShowGUI() {
         // Creates and configures the UI Frame and the content pane
-        JFrame frame = new JFrame("Security Table");
+        JFrame frame = new JFrame("All securities with changed settlement terms");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        TableofRecords newContentPane = new TableofRecords();
+        LocalDBView newContentPane = new LocalDBView();
         int contentPaneWidth = 700;
   	    int contentPaneHeight = 700;
         newContentPane.setPreferredSize(new Dimension(contentPaneWidth, contentPaneHeight));
@@ -280,9 +208,6 @@ public class TableofRecords extends JPanel {
             public void run() {
                 createAndShowGUI();
             }
-        });
-        
-        
-        
+        });     
     }
 }
