@@ -1,2 +1,2 @@
-powershell -NoProfile -ExecutionPolicy Bypass FOLDERPATH\\mysqlGET.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\...\\mysqlGET.ps1"
 pause

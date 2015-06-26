@@ -1,2 +1,2 @@
-powershell -NoProfile -ExecutionPolicy Bypass FOLDERPATH\\outlook.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\...\\outlook.ps1"
 pause

@@ -1,9 +1,12 @@
+package security.settlement;
+
 import javax.swing.DefaultCellEditor;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.AbstractTableModel;
@@ -13,6 +16,7 @@ import javax.swing.table.TableColumn;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.sql.*;
 import java.util.*;
@@ -28,7 +32,6 @@ public class LocalDBView extends JPanel {
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs;
-    private boolean DEBUG = false;
     private int securityId = 0;
     private String securitySymbol = "";
     Object[][] listOfSecurities;
@@ -56,6 +59,15 @@ public class LocalDBView extends JPanel {
         JScrollPane scrollPane = new JScrollPane(table);
         // Sets up column sizes
         initColumnSizes(table);
+        Font font = new Font("Tahoma", Font.PLAIN, 16);
+        table.setFont(font);
+        table.getTableHeader().setFont(font);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
         // Sets up column's cell editors
         //setUpSettlementTermColumn(table, table.getColumnModel().getColumn(4));
         // Adds the scroll pane to this panel.
@@ -85,12 +97,6 @@ public class LocalDBView extends JPanel {
                                  table, longValues[i],
                                  false, false, 0, i);
             cellWidth = comp.getPreferredSize().width;
-            if (DEBUG) {
-                System.out.println("Initializing width of column "
-                                   + i + ". "
-                                   + "headerWidth = " + headerWidth
-                                   + "; cellWidth = " + cellWidth);
-            }
             column.setPreferredWidth(Math.max(headerWidth, cellWidth));
         }
     }
@@ -101,8 +107,6 @@ public class LocalDBView extends JPanel {
 	   int colPos = 0;
        public MyTableModel() {
     	   try{
-    		  // 2D string array that holds security records
- 			  listOfSecurities = new Object[100][100];
  	          // Registers the JDBC driver
  	          Class.forName("com.mysql.jdbc.Driver");
  	          // Opens connection
@@ -110,19 +114,19 @@ public class LocalDBView extends JPanel {
  	          // Creates SQL statement
  	          stmt = conn.createStatement();
  	          // SQL select statement to retrieve target securities
- 	          String sql = "SELECT SECURITY_ID, SYMBOL, SECURITY_DESC, SETTLEMENT_TERM FROM SECURITY WHERE PERMANENTLY_DELISTED='N' AND MARKED='y'";
+ 	          String sql = "SELECT SECURITY_ID, SYMBOL, SECURITY_DESC, SETTLEMENT_TERM FROM STAGE_SECURITY WHERE PERMANENTLY_DELISTED='N' AND MARKED='Y'";
  	          // Executes the database query
  			  rs = stmt.executeQuery(sql);
  			  // Handles returned query result
  			  if(!rs.first()) {
- 				  System.out.println("No record found.");
+ 				  listOfSecurities = new Object[1][5];
  				  listOfSecurities[0][0] = new Integer(0);
  				  listOfSecurities[0][1] = "N/A";
  				  listOfSecurities[0][2] = "N/A";
  				  listOfSecurities[0][3] = new Integer(0);
  			  } else {
  				  // Extracts data from result set
- 				 rs.last();
+ 				  rs.last();
 				  totalSecurities = rs.getRow();
 				  listOfSecurities = new Object[totalSecurities][4];
 				  rs.first();
@@ -188,7 +192,7 @@ public class LocalDBView extends JPanel {
     // Creates and displays the UI
     private static void createAndShowGUI() {
         // Creates and configures the UI Frame and the content pane
-        JFrame frame = new JFrame("All securities with changed settlement terms");
+        JFrame frame = new JFrame("All Outstanding Securities");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         LocalDBView newContentPane = new LocalDBView();
         int contentPaneWidth = 700;
