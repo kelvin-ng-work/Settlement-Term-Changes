@@ -1,3 +1,5 @@
+package security.settlement;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -20,14 +22,16 @@ public class EmailDemo {
     // String array that holds the updated security symbols
     private String[] securitySymbolsArray;
     // Date and time to send the notification email
-    private Date sentDate;
-    private int daysUntilNotification;
+    private Date tradeDate;
+    private Date settlementDate;
+    private int settlementTerm;
     
-    public EmailDemo(int days, Date date, String[] securitySymbols) {
+    public EmailDemo(int days, Date dateOfTrade, Date dateOfsettlement, String[] securitySymbols) {
     	securitySymbolsArray = new String[100];
     	securitySymbolsArray = securitySymbols;
-    	sentDate = date;
-    	daysUntilNotification = days;
+    	tradeDate = dateOfTrade;
+    	settlementDate = dateOfsettlement;
+    	settlementTerm = days;
     }
     
     // Configurations the email and sets the date and time to send the email
@@ -40,18 +44,21 @@ public class EmailDemo {
         props.put("mail.smtp.port", "587");
         // Email session
 		Session session = Session.getInstance(props,
-		  new javax.mail.Authenticator() {
-		    protected PasswordAuthentication getPasswordAuthentication() {
-		        return new PasswordAuthentication(username, password);
-		    }
-		});
+				new javax.mail.Authenticator() {
+					protected PasswordAuthentication getPasswordAuthentication() {
+						return new PasswordAuthentication(username, password);
+					}
+				});
         try {
         	// Email message body
-        	DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+        	DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
         	String messageBody = "Good morning/afternoon,<br><br>";
-        	messageBody += "We updated the settlement dates of the following securities to " + daysUntilNotification + " days.";
-        	messageBody += "Please be notified that these securities will be settled on " + dateFormat.format(sentDate) + ".<br><br>";
-        	messageBody += "<b>Updated Securities:</b><br><br>";
+        	if (settlementTerm == 0) {
+        		messageBody += "The following symbol(s), with the trade date of " + dateFormat.format(tradeDate) + ", will be for same day settlement:<br><br>";
+        	} else {
+        		messageBody += "The following symbol(s), with the trade date of " + dateFormat.format(tradeDate) + ", will be for " + settlementTerm + "-day settlement on " + dateFormat.format(settlementDate) + ":<br><br>";
+        	}
+        	
         	int count = 0;
         	int newLineCount = 0;
         	// Appends the security symbols to the email message body
@@ -66,25 +73,23 @@ public class EmailDemo {
         		}
         		count++;
         	} while (count < securitySymbolsArray.length && !(securitySymbolsArray[count] == null));
-        	messageBody += "<br><br>Best Regards,<br>";
+        	messageBody += "<br>Best Regards,<br>";
         	messageBody += "OmegaATS";
         	// Configures email settings
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress("user@domain"));
             message.setRecipients(Message.RecipientType.TO,
             InternetAddress.parse("user@domain"));
-            message.setSubject("Settlement Change Notice");
+            message.setSubject("Trade and Settlement Date Change(s)");
             message.setContent(messageBody, "text/html");
-            message.setSentDate(sentDate);
             Transport.send(message);
-            System.out.println("Done");
         } catch (MessagingException e) {
             throw new RuntimeException(e);
         }
     }
     // Main function to run this program alone
 	public static void main(String[]args) throws IOException {
-			EmailDemo emailLauncher = new EmailDemo(0, new Date(), new String[]{"AAA", "BBB", "CCC"});
+			EmailDemo emailLauncher = new EmailDemo(0, new Date(), new Date(), new String[]{"AAA", "BBB", "CCC"});
 			emailLauncher.sendEmail();
 	}
 }

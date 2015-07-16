@@ -1,3 +1,5 @@
+package security.settlement;
+
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -39,20 +41,18 @@ public class SendEmailPage extends JFrame {
 	private JSpinner timeSpinner;
 	private DateFormat dateFormat;
 	private Calendar c;
-	private int daysUntilSettlement;
+	private int businessDaysUntilSettlement;
 	private Date settlementDate;
-	private Date emailNotificationDate;
+	private Date tradeDate;
 	private Font font;
 	private String[] securitySymbolsArray;
 	
-    public SendEmailPage(int settlementTerm, String[] securitySymbols) {
+    public SendEmailPage(long dateOfTrade, long dateToSettlement, int businessDays, String[] securitySymbols) {
     	securitySymbolsArray = new String[100];
     	securitySymbolsArray = securitySymbols;
-    	daysUntilSettlement = settlementTerm;
-    	dateFormat= new SimpleDateFormat("MM/dd/yyyy");
-    	c = Calendar.getInstance();
-    	c.setTime(new Date());
-    	c.add(Calendar.DATE, settlementTerm);
+    	settlementDate = new Date(dateToSettlement);
+    	tradeDate = new Date(dateOfTrade);
+    	businessDaysUntilSettlement = businessDays;
         initUI();
     }
 
@@ -70,7 +70,7 @@ public class SendEmailPage extends JFrame {
 	    } catch (UnsupportedLookAndFeelException e) {
 	        e.printStackTrace();
 	    }
-    	font = new Font("Palatino", Font.PLAIN, 16);
+    	font = new Font("Tahoma", Font.PLAIN, 16);
     	controlPanel = new JPanel();
     	GridLayout layout = new GridLayout(4,2);
     	layout.setVgap(10);
@@ -80,10 +80,11 @@ public class SendEmailPage extends JFrame {
     	JLabel settlementLabel = new JLabel("Settlement Date", JLabel.CENTER);
     	settlementLabel.setFont(font);
     	controlPanel.add(settlementLabel);
-        JTextField settlementDate = new JTextField();
-        settlementDate.setFont(font);
-        settlementDate.setText(dateFormat.format(c.getTime()));
-        controlPanel.add(settlementDate);
+        JTextField settlementDateDisplay = new JTextField();
+        settlementDateDisplay.setFont(font);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+        settlementDateDisplay.setText(dateFormat.format(settlementDate));
+        controlPanel.add(settlementDateDisplay);
         JLabel deliveryDateTime = new JLabel("Email Delivery", JLabel.CENTER);
         deliveryDateTime.setFont(font);
         controlPanel.add(deliveryDateTime);
@@ -104,7 +105,7 @@ public class SendEmailPage extends JFrame {
         controlPanel.add(statusLabel);
         add(controlPanel);
         pack();
-        setTitle("Email Date/Time");
+        setTitle("Notification Email");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         //setLocationRelativeTo(null);
         Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
@@ -116,10 +117,11 @@ public class SendEmailPage extends JFrame {
     // Button handler to send email
     class sendEmailActionListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
-        	EmailDemo launchEmail = new EmailDemo(daysUntilSettlement, c.getTime(), securitySymbolsArray);
-        	launchEmail.sendEmail();
-        	statusLabel.setText("Email sent.");
-        	System.out.println((Date)timeSpinner.getValue());
+        	//System.out.println((Date)timeSpinner.getValue());
+        	//EmailDemo launchEmail = new EmailDemo(businessDaysUntilSettlement, tradeDate, settlementDate, (Date)timeSpinner.getValue(), securitySymbolsArray);
+        	//launchEmail.sendEmail();
+        	statusLabel.setText("Email is set to be sent.");
+        	//System.out.println((Date)timeSpinner.getValue());
         }
      }
     
@@ -127,7 +129,7 @@ public class SendEmailPage extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-            	SendEmailPage emailWindow = new SendEmailPage(3, new String[]{"AAA", "BBB", "CCC"});
+            	SendEmailPage emailWindow = new SendEmailPage(100, 100, 3, new String[]{"AAA", "BBB", "CCC"});
             	emailWindow.setVisible(true);
             }
         });

@@ -3,6 +3,7 @@ package security.settlement;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -23,10 +24,8 @@ import java.util.*;
 
 // Database operations
 public class LocalDBView extends JPanel {
-	// JDBC driver name and database URL
 	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-	static final String DB_URL = "jdbc:mysql://host/database";
-	// Database user credential
+    static final String DB_URL = "jdbc:mysql://host:port/database";
     static final String USER = "user";
     static final String PASS = "password";
     Connection conn = null;
@@ -52,7 +51,7 @@ public class LocalDBView extends JPanel {
 	        e.printStackTrace();
 	    }
         // Creates the security records table
-        JTable table = new JTable(new MyTableModel());
+        JTable table = new JTable(new SecurityTableModel());
         table.setAutoCreateRowSorter(true);
         table.setPreferredScrollableViewportSize(new Dimension(500, 70));
         // Creates the scroll pane
@@ -68,6 +67,7 @@ public class LocalDBView extends JPanel {
         table.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
+        ((DefaultTableCellRenderer)table.getTableHeader().getDefaultRenderer()).setHorizontalAlignment(JLabel.CENTER);
         // Sets up column's cell editors
         //setUpSettlementTermColumn(table, table.getColumnModel().getColumn(4));
         // Adds the scroll pane to this panel.
@@ -75,9 +75,9 @@ public class LocalDBView extends JPanel {
     }
     
     // Sets up column sizes
-    private void initColumnSizes(JTable table) {
+    public void initColumnSizes(JTable table) {
     	// Creates table model
-        MyTableModel model = (MyTableModel)table.getModel();
+        SecurityTableModel model = (SecurityTableModel)table.getModel();
         TableColumn column = null;
         Component comp = null;
         int headerWidth = 0;
@@ -102,10 +102,10 @@ public class LocalDBView extends JPanel {
     }
     
     // Table model class
-    class MyTableModel extends AbstractTableModel {
+    public class SecurityTableModel extends AbstractTableModel {
 	   int rowPos = 0;
 	   int colPos = 0;
-       public MyTableModel() {
+       public SecurityTableModel() {
     	   try{
  	          // Registers the JDBC driver
  	          Class.forName("com.mysql.jdbc.Driver");
@@ -114,7 +114,7 @@ public class LocalDBView extends JPanel {
  	          // Creates SQL statement
  	          stmt = conn.createStatement();
  	          // SQL select statement to retrieve target securities
- 	          String sql = "SELECT SECURITY_ID, SYMBOL, SECURITY_DESC, SETTLEMENT_TERM FROM STAGE_SECURITY WHERE PERMANENTLY_DELISTED='N' AND MARKED='Y'";
+ 	          String sql = "SELECT SECURITY_ID, SYMBOL, SECURITY_DESC, SETTLEMENT_TERM FROM STAGE_SECURITY";
  	          // Executes the database query
  			  rs = stmt.executeQuery(sql);
  			  // Handles returned query result

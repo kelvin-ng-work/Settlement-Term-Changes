@@ -25,16 +25,19 @@ public class SearchandUpdatePage {
 	private JRadioButton secondOption;
 	private JButton searchButton;
 	private JButton updateButton;
-	private JCheckBox updateStatus;
+	private JCheckBox updateAll;
+	private JCheckBox emailOption;
 	private JTextField securityID;
 	private JTextField symbol;
 	private JTextField holidays;
 	private JSpinner timeSpinner;
 	private JSpinner refTimeSpinner;
-	private Font font;
+	private Font labelFont;
+	private Font fieldFont;
 	private String[] securitySymbolsArray;
 	private long tradeDateLong;
 	private long settlementDateLong;
+	private boolean selectAll;
 	private Calendar calendar;
 	
 
@@ -63,17 +66,22 @@ public class SearchandUpdatePage {
 		public void actionPerformed(ActionEvent e) {
 			frame = new JFrame("Security Table");
 			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+			if(updateAll.isSelected()) {
+				selectAll = true;
+			} else {
+				selectAll = false;
+			}
 			if(!(securityID.getText().length() == 0)) {
-				newContentPane = new LocalDBControl(Integer.parseInt(securityID.getText()));
+				newContentPane = new LocalDBControl(Integer.parseInt(securityID.getText()), selectAll);
 			} else if (!(symbol.getText().length() == 0)) {
-				newContentPane = new LocalDBControl(symbol.getText());
+				newContentPane = new LocalDBControl(symbol.getText(), selectAll);
 			} else {
 				//JOptionPane.showMessageDialog(new JFrame(), "Input either a security Id or symbol.", "Input Error", JOptionPane.ERROR_MESSAGE);
-				newContentPane = new LocalDBControl();
+				newContentPane = new LocalDBControl(selectAll);
 			}
 			newContentPane.setOpaque(true);
 			frame.setContentPane(newContentPane);
-			frame.setPreferredSize(new Dimension(800,800));
+			frame.setPreferredSize(new Dimension(800, 800));
 			frame.pack();
 			frame.setVisible(true);
 			Calendar calendar = Calendar.getInstance();
@@ -86,89 +94,115 @@ public class SearchandUpdatePage {
 	// Updates settlement dates of securities
 	class updateActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
+			int holidaysCount, daysToSettlement, businessDays;
 			// Trade date
 			tradeDateLong = ((Date)refTimeSpinner.getValue()).getTime();
 			// Settlement date
 			settlementDateLong = ((Date)timeSpinner.getValue()).getTime();
 			// holidays in between trade date and settlement date
-			int holidaysCount = Integer.parseInt(holidays.getText());
-			// Total days between trade date and settlement date
-			long days = (settlementDateLong - tradeDateLong) / (24 * 60 * 60 * 1000);
-			int daysToSettlement = (int)days;
+			holidaysCount = Integer.parseInt(holidays.getText());
 			// Trade date is today's date
 			if(tradeDateLong % (24 * 60 * 60 * 1000) != 14400000)
 			{
-				daysToSettlement++;
+				long timeAfterDayStart = tradeDateLong % (24 * 60 * 60 * 1000);
+				tradeDateLong -= timeAfterDayStart;
 			}
-			// Business days between trade date and settlement date
-			int businessDays = daysToSettlement;
-			// Sets calendar to the coming Friday
-			calendar = Calendar.getInstance();
-			calendar.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
-			long Friday = (calendar.getTime()).getTime();
-			// Retrieves the Friday in the week of the trade date
-			while(Friday < tradeDateLong) {
-				Friday += 1000 * 60 * 60 * 24 * 7;
+			// Total days between trade date and settlement date
+			long days = (settlementDateLong - tradeDateLong) / (24 * 60 * 60 * 1000);
+			daysToSettlement = (int)days;
+			if (daysToSettlement == 0) {
+				businessDays = 0;
+			} else {
+				// Business days between trade date and settlement date
+				businessDays = daysToSettlement;
+				// Sets calendar to the coming Friday
+				calendar = Calendar.getInstance();
+				calendar.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
+				long Friday = (calendar.getTime()).getTime();
+				// Retrieves the Friday in the week of the trade date
+				while(Friday < tradeDateLong) {
+					Friday += 1000 * 60 * 60 * 24 * 7;
+				}
+				//System.out.println("Trade date: " + refTimeSpinner.getValue());
+				//System.out.println("Friday in the week of trade date: " + new Date(Friday));
+				if (daysToSettlement < 7) {	// Settlement date is within one week after trade date
+					long extendsOverWeekend = settlementDateLong - Friday;
+					if (extendsOverWeekend > 0 && extendsOverWeekend <= 150000000) {	// Settlement date is set to a weekend date
+						JOptionPane.showMessageDialog(new JFrame(), "Settlement date is incorrectly set to a weekend date.", "Update Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					} else if (extendsOverWeekend > 0) {	// Settlement date spans over a weekend
+						businessDays = daysToSettlement - 2;
+					}
+				} else if (daysToSettlement >= 7 && daysToSettlement < 14) { // Settlement date is longer than one week after trade date
+					long followingFriday = Friday + (1000 * 60 * 60 * 24 * 7);
+					long extendsOverTwoWeekends = settlementDateLong - followingFriday;
+					//System.out.println(new Date(followingFriday));
+					//System.out.println("Settlement date is after the following week's Friday: " + extendsOverTwoWeekends);
+					if (extendsOverTwoWeekends > 0 && extendsOverTwoWeekends <= 150000000) {	// Settlement date is set to a weekend date
+						JOptionPane.showMessageDialog(new JFrame(), "Settlement date is incorrectly set to a weekend date.", "Update Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					} else if (extendsOverTwoWeekends > 0) {	// Settlement date spans over two weekends
+						businessDays = daysToSettlement - 4;
+					} else {	// // Settlement date spans over a weekend
+						businessDays = daysToSettlement - 2;
+					}
+				} else if (daysToSettlement >= 14) { // Settlement date is longer than two weeks after trade date
+					long nextFollowingFriday = Friday + (1000 * 60 * 60 * 24 * 14);
+					long extendsOverThreeWeekends = settlementDateLong - nextFollowingFriday;
+					//System.out.println(new Date(nextFollowingFriday));
+					//System.out.println("Settlement date is after the second following week's Friday: " + extendsOverThreeWeekends);
+					if (extendsOverThreeWeekends > 0 && extendsOverThreeWeekends <= 150000000) {	// Settlement date is set to a weekend date
+						JOptionPane.showMessageDialog(new JFrame(), "Settlement date is incorrectly set to a weekend date.", "Update Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					} else if (extendsOverThreeWeekends > 0) {	// Settlement date spans over three weekends
+						businessDays = daysToSettlement - 6;
+					} else {	// Settlement date spans over two weekends
+						businessDays = daysToSettlement - 4;
+					}
+				}
+				businessDays -= holidaysCount;
 			}
-			//System.out.println("Trade date: " + refTimeSpinner.getValue());
-			//System.out.println("Friday in the week of trade date: " + new Date(Friday));
-			if (daysToSettlement < 7) {	// Settlement date is within one week after trade date
-				long extendsOverWeekend = settlementDateLong - Friday;
-				//System.out.println("Settlement date is after Friday: " + extendsOverWeekend);
-				if (extendsOverWeekend > 0) {
-					businessDays = daysToSettlement - 2;
-				}
-			} else if (daysToSettlement >= 7 && daysToSettlement < 14) { // Settlement date is longer than one week after trade date
-				long followingFriday = Friday + (1000 * 60 * 60 * 24 * 7);
-				long extendsOverTwoWeekends = settlementDateLong - followingFriday;
-				//System.out.println(new Date(followingFriday));
-				//System.out.println("Settlement date is after the following week's Friday: " + extendsOverTwoWeekends);
-				if (extendsOverTwoWeekends > 0) {
-					businessDays = daysToSettlement - 4;
-				} else {
-					businessDays = daysToSettlement - 2;
-				}
-			} else if (daysToSettlement >= 14) { // Settlement date is longer than two weeks after trade date
-				long nextFollowingFriday = Friday + (1000 * 60 * 60 * 24 * 14);
-				long extendsOverThreeWeekends = settlementDateLong - nextFollowingFriday;
-				//System.out.println(new Date(nextFollowingFriday));
-				//System.out.println("Settlement date is after the second following week's Friday: " + extendsOverThreeWeekends);
-				if (extendsOverThreeWeekends > 0) {
-					businessDays = daysToSettlement - 6;
-				} else {
-					businessDays = daysToSettlement - 4;
-				}
-			}
-			businessDays -= holidaysCount;
+			
 			securitySymbolsArray = new String[100];
 			if(!(securityID.getText().length() == 0)) {
-				newContentPane.updateSettlementDate(businessDays, tradeDateLong);
+				if(!(newContentPane.updateSettlementDate(businessDays, tradeDateLong))) {
+					JOptionPane.showMessageDialog(new JFrame(), "None of the securities are selected.", "Update Error", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
 				securitySymbolsArray = newContentPane.getSecurities();
-				newContentPane = new LocalDBControl(securityID.getText());
+				newContentPane = new LocalDBControl(Integer.parseInt(securityID.getText()), false);
 			} else if (!(symbol.getText().length() == 0)) {
-				newContentPane.updateSettlementDate(businessDays, tradeDateLong);
+				if(!(newContentPane.updateSettlementDate(businessDays, tradeDateLong))) {
+					JOptionPane.showMessageDialog(new JFrame(), "None of the securities are selected.", "Update Error", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
 				securitySymbolsArray = newContentPane.getSecurities();
-				newContentPane = new LocalDBControl(symbol.getText());
+				newContentPane = new LocalDBControl(symbol.getText(), false);
 			} else {
 				JOptionPane.showMessageDialog(new JFrame(), "User did not specify securities to be updated.", "Update Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-			updateStatus.setSelected(true);
 			DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 			Date date = new Date();
 			newContentPane.setOpaque(true);
 			frame.setContentPane(newContentPane);
 			frame.pack();
 			frame.setVisible(true);
-			SendEmailPage emailWindow = new SendEmailPage(tradeDateLong, settlementDateLong, businessDays, securitySymbolsArray);
-			emailWindow.setVisible(true);
-			// Invokes powershell script to update OmegaDB database
+			if(emailOption.isSelected()) {
+				EmailDemo launchEmail = new EmailDemo(businessDays, new Date(tradeDateLong), new Date(settlementDateLong), securitySymbolsArray);
+				launchEmail.sendEmail();
+				//SendEmailPage emailWindow = new SendEmailPage(tradeDateLong, settlementDateLong, businessDays, securitySymbolsArray);
+				//emailWindow.setVisible(true);
+			}
+			// Invokes PowerShell script to update OmegaDB database (replaced by scheduled PowerShell script on the remote server)
+			/*
 			String command = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\kelvin.ng\\Desktop\\Operations Applications\\SettlementTermChanges\\initSettlementTermChanges.ps1\"";
 			try {
 				Process powerShellProcess = Runtime.getRuntime().exec(command);
 			} catch (IOException err) {
 				err.printStackTrace();
 			}
+			*/
 		}
 	}
 
@@ -193,11 +227,11 @@ public class SearchandUpdatePage {
 		} catch (UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
-		font = new Font("Tahoma", Font.PLAIN, 16);
-		int frameWidth = 500;
-		int frameHeight = 850;
-		mainFrame = new JFrame("Trade/Settlement Term Changes");
-		mainFrame.setPreferredSize(new Dimension(frameWidth, frameHeight));
+		labelFont = new Font("Tahoma", Font.BOLD, 16);
+		fieldFont = new Font("Tahoma", Font.PLAIN, 16);
+
+		mainFrame = new JFrame("Settlement Term Adjustment");
+
 		mainFrame.addWindowListener(new WindowAdapter() {
 		public void windowClosing(WindowEvent windowEvent){
 				System.exit(0);
@@ -205,30 +239,29 @@ public class SearchandUpdatePage {
 		});
 		contentPane = new JPanel();
 		contentPane.setOpaque(true);
-		contentPane.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		int contentPaneWidth = 500;
-		int contentPaneHeight = 800;
+		int contentPaneHeight = 750;
 		contentPane.setPreferredSize(new Dimension(contentPaneWidth, contentPaneHeight));
 		controlPanel = new JPanel();
 		controlPanel.setOpaque(true);
-		controlPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-		GridLayout contorlLayout = new GridLayout(9,2);
+		controlPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+		GridLayout contorlLayout = new GridLayout(0,2);
 		contorlLayout.setVgap(10);
 		contorlLayout.setHgap(10);
 		controlPanel.setLayout(contorlLayout);
-		int controlPanelWidth = 450;
-		int controlPanelHeight = 750;
+		int controlPanelWidth = 500;
+		int controlPanelHeight = 700;
 		controlPanel.setPreferredSize(new Dimension(controlPanelWidth, controlPanelHeight));
-		controlPanel.setBorder(BorderFactory.createTitledBorder(" "));
-		controlPanel.setFont(font);
+		//controlPanel.setBorder(BorderFactory.createTitledBorder(" "));
 		contentPane.add(controlPanel);
 		// Search Options
 		JPanel buttonsPanel = new JPanel();
 		buttonsPanel.setLayout(new GridLayout(1, 2));
 		firstOption = new JRadioButton("ID");
-		firstOption.setFont(font);
+		firstOption.setFont(fieldFont);
 		secondOption = new JRadioButton("Symbol");
-		secondOption.setFont(font);
+		secondOption.setFont(fieldFont);
 		ButtonGroup searchOptionGroup = new ButtonGroup();
 		searchOptionGroup.add(firstOption);
 		searchOptionGroup.add(secondOption);
@@ -240,15 +273,23 @@ public class SearchandUpdatePage {
 		controlPanel.add(buttonsPanel);
 		// Search Fields
 		JLabel securityIdLabel = new JLabel("Security ID", JLabel.LEFT);
-		securityIdLabel.setFont(font);
+		securityIdLabel.setFont(labelFont);
 		securityID = new JTextField();
-		securityID.setFont(font);
+		securityID.setFont(fieldFont);
 		JLabel symbolLabel = new JLabel("Security Symbol", JLabel.LEFT);
-		symbolLabel.setFont(font);
+		symbolLabel.setFont(labelFont);
 		symbol = new JTextField();
-		symbol.setFont(font);
+		symbol.setFont(fieldFont);
+		updateAll = new JCheckBox("Update All");
+		updateAll.setHorizontalTextPosition(SwingConstants.RIGHT);
+		updateAll.setFont(new Font("Tahoma", Font.PLAIN, 12));
+		JPanel searchButtonPanel = new JPanel();
+		BorderLayout searchPanelLayout = new BorderLayout();
+		searchButtonPanel.setLayout(searchPanelLayout);
 		searchButton = new JButton("Search");
-		searchButton.setFont(font);
+		searchButtonPanel.add(searchButton, BorderLayout.SOUTH);
+		searchButtonPanel.add(updateAll, BorderLayout.EAST);
+		searchButton.setFont(fieldFont);
 		securityID.setEnabled(true);
 		symbol.setEnabled(false);
 		controlPanel.add(securityIdLabel);
@@ -256,28 +297,36 @@ public class SearchandUpdatePage {
 		controlPanel.add(symbolLabel);
 		controlPanel.add(symbol);
 		controlPanel.add(new JPanel());
-		controlPanel.add(searchButton);
+		controlPanel.add(searchButtonPanel);
 		// Data Fields
 		JLabel tradeDateLabel = new JLabel("Trade Date", JLabel.LEFT);
-		tradeDateLabel.setFont(font);
+		tradeDateLabel.setFont(labelFont);
 		JLabel settlementDateLabel = new JLabel("Settlement Date", JLabel.LEFT);
-		settlementDateLabel.setFont(font);
+		settlementDateLabel.setFont(labelFont);
 		JLabel holidaysLabel = new JLabel("Interim Holidays", JLabel.LEFT);
-		holidaysLabel.setFont(font);
+		holidaysLabel.setFont(labelFont);
 		timeSpinner = new JSpinner(new SpinnerDateModel());
 		refTimeSpinner = new JSpinner(new SpinnerDateModel());
 		JSpinner.DateEditor refTimeEditor = new JSpinner.DateEditor(refTimeSpinner, "MM/dd/yyyy");
 		refTimeSpinner.setEditor(refTimeEditor);
 		refTimeSpinner.setValue(new Date());
-		refTimeSpinner.setFont(font);
+		refTimeSpinner.setFont(fieldFont);
 		JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(timeSpinner, "MM/dd/yyyy");
 		timeSpinner.setEditor(timeEditor);
 		timeSpinner.setValue(new Date());
-		timeSpinner.setFont(font);
+		timeSpinner.setFont(fieldFont);
 		holidays = new JTextField("0");
-		holidays.setFont(font);
+		holidays.setFont(fieldFont);
+		emailOption = new JCheckBox("Require Email Confirmation");
+		emailOption.setHorizontalTextPosition(SwingConstants.RIGHT);
+		emailOption.setFont(new Font("Tahoma", Font.PLAIN, 12));
+		JPanel updateButtonPanel = new JPanel();
+		BorderLayout updatePanelLayout = new BorderLayout();
+		updateButtonPanel.setLayout(updatePanelLayout);
 		updateButton = new JButton("Update");
-		updateButton.setFont(font);
+		updateButtonPanel.add(updateButton, BorderLayout.SOUTH);
+		updateButtonPanel.add(emailOption, BorderLayout.EAST);
+		updateButton.setFont(fieldFont);
 		controlPanel.add(tradeDateLabel);
 		controlPanel.add(refTimeSpinner);
 		controlPanel.add(settlementDateLabel);
@@ -285,13 +334,7 @@ public class SearchandUpdatePage {
 		controlPanel.add(holidaysLabel);
 		controlPanel.add(holidays);
 		controlPanel.add(new JPanel());
-		controlPanel.add(updateButton);
-		// Status Confirmation
-		updateStatus = new JCheckBox("Completed");
-		updateStatus.setFont(font);
-		updateStatus.setEnabled(false);
-		controlPanel.add(new JPanel());
-		controlPanel.add(updateStatus);
+		controlPanel.add(updateButtonPanel);
 		mainFrame.add(contentPane);
 		mainFrame.pack();
 		Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
